@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 class Config:
+    BASE_DIR = BASE_DIR
     """System-wide configuration settings."""
     PORT = int(os.getenv("PORT", 5000))
     DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
