@@ -42,8 +42,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Enable CORS for Vercel frontend
-    CORS(app, resources={r"/api/*": {"origins": ["https://language-translation-tool-code-alpha-54t72igc4.vercel.app"]}}, supports_credentials=True)
+    CORS(app, resources={r"/api/*": {"origins": ["https://language-translation-tool-code-alpha-oxqa-glnwzmwhx.vercel.app"]}}, supports_credentials=True)
 
     # Register Middleware Error Handlers
     from middleware.error_middleware import register_error_handlers
