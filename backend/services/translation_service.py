@@ -6,9 +6,10 @@ from config import Config
 
 logger = logging.getLogger("LinguaBridge")
 
-# In-memory translation LRU cache: { cache_key: translated_text }
+# In-memory translation LRU cache
 TRANSLATION_CACHE = {}
 MAX_CACHE_SIZE = 1000
+
 
 class TranslationService:
     """Service layer for LibreTranslate Integration, failover, and caching."""
@@ -25,7 +26,9 @@ class TranslationService:
         Translates text with caching and secondary mirror failover.
         Returns dict: {"translatedText": "...", "executionTimeMs": int, "cached": bool}
         """
+
         text = text.strip()
+
         if not text:
             raise ValueError("Text field is empty. Please enter text to translate.")
 
@@ -34,7 +37,7 @@ class TranslationService:
 
         cache_key = cls._generate_cache_key(text, source, target)
 
-        # Check Cache Hit
+        # Check cache
         if cache_key in TRANSLATION_CACHE:
             logger.info(f"Cache HIT for key: {cache_key[:8]}")
             return {
@@ -49,6 +52,7 @@ class TranslationService:
             "target": target,
             "format": "text"
         }
+
         if Config.LIBRETRANSLATE_API_KEY:
             payload["api_key"] = Config.LIBRETRANSLATE_API_KEY
 
@@ -56,45 +60,73 @@ class TranslationService:
         translated_text = None
         error_details = None
 
-        # Attempt 1: Primary Mirror
+        # Attempt 1: Primary LibreTranslate endpoint
         try:
-            response = requests.post(Config.LIBRETRANSLATE_URL, json=payload, timeout=Config.REQUEST_TIMEOUT)
+            response = requests.post(
+                Config.LIBRETRANSLATE_URL,
+                json=payload,
+                timeout=Config.REQUEST_TIMEOUT
+            )
+
             if response.status_code == 200:
                 result = response.json()
                 translated_text = result.get("translatedText")
+            else:
+                error_details = f"HTTP {response.status_code}"
+
         except Exception as e:
-            logger.warning(f"Primary LibreTranslate endpoint failed ({Config.LIBRETRANSLATE_URL}): {e}")
+            logger.warning(
+                f"Primary LibreTranslate endpoint failed "
+                f"({Config.LIBRETRANSLATE_URL}): {e}"
+            )
             error_details = str(e)
 
-        # Attempt 2: Backup Mirror (if Primary failed)
+        # Attempt 2: Backup LibreTranslate endpoint
         if translated_text is None and Config.LIBRETRANSLATE_BACKUP_URL:
             try:
-                logger.info(f"Attempting failover to backup mirror ({Config.LIBRETRANSLATE_BACKUP_URL})...")
-                response = requests.post(Config.LIBRETRANSLATE_BACKUP_URL, json=payload, timeout=Config.REQUEST_TIMEOUT)
+                logger.info(
+                    f"Attempting failover to backup mirror "
+                    f"({Config.LIBRETRANSLATE_BACKUP_URL})..."
+                )
+
+                response = requests.post(
+                    Config.LIBRETRANSLATE_BACKUP_URL,
+                    json=payload,
+                    timeout=Config.REQUEST_TIMEOUT
+                )
+
                 if response.status_code == 200:
                     result = response.json()
                     translated_text = result.get("translatedText")
+                else:
+                    error_details = f"Backup HTTP {response.status_code}"
+
             except Exception as e:
-                logger.error(f"Backup LibreTranslate endpoint failed: {e}")
+                logger.error(
+                    f"Backup LibreTranslate endpoint failed: {e}"
+                )
                 error_details = str(e)
 
-        # Fallback Engine (Mock/Rule fallback if external services offline during dev testing)
+        # If both LibreTranslate endpoints failed, return a real error
         if translated_text is None:
-            logger.warning("External translation APIs unreachable. Using fallback engine.")
-            # Simple rule‑based fallback for common words (used for demo/testing)
-            fallback_map = {
-                ("en", "hi", "hello"): "नमस्ते",
-                ("en", "es", "hello"): "Hola",
-                ("en", "fr", "hello"): "Bonjour"
-            }
-            key = (source.lower(), target.lower(), text.strip().lower())
-            translated_text = fallback_map.get(key, f"[Translated ({source} -> {target})]: {text}")
+            logger.error(
+                f"LibreTranslate failed. "
+                f"Primary URL: {Config.LIBRETRANSLATE_URL}, "
+                f"Backup URL: {Config.LIBRETRANSLATE_BACKUP_URL}, "
+                f"Details: {error_details}"
+            )
 
-        execution_time_ms = int((time.time() - start_time) * 1000)
+            raise RuntimeError(
+                "Translation service is currently unavailable. "
+                "Please check the LibreTranslate configuration."
+            )
 
-        # Populate LRU Cache
+        execution_time_ms = int(
+            (time.time() - start_time) * 1000
+        )
+
+        # Populate LRU cache
         if len(TRANSLATION_CACHE) >= MAX_CACHE_SIZE:
-            # Pop oldest key
             first_key = next(iter(TRANSLATION_CACHE))
             TRANSLATION_CACHE.pop(first_key)
 
