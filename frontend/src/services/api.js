@@ -1,15 +1,7 @@
 import axios from 'axios';
 
-const rawBase = import.meta.env.VITE_API_URL;
-
-const normalizedBase = rawBase
-  ? `${rawBase.replace(/\/+$/, '')}/api`
-  : import.meta.env.PROD
-    ? 'https://language-translation-tool-code-alpha-1.onrender.com/api'
-    : 'http://localhost:5000/api';
-
 const api = axios.create({
-  baseURL: normalizedBase,
+  baseURL: 'https://language-translation-tool-code-alpha-1.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
