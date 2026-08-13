@@ -40,7 +40,15 @@ def init_db():
 def create_app():
     """Application factory for Flask REST API."""
     app = Flask(__name__)
-    CORS(app, resources={r"/api/*": {"origins": ["https://language-translation-tool-code-alph-phi.vercel.app"]}}, supports_credentials=True)
+    CORS(
+        app,
+        resources={
+            r"/api/*": {
+                "origins": Config.CORS_ALLOWED_ORIGINS
+            }
+        },
+        supports_credentials=True
+    )
 
     # Register Middleware Error Handlers
     from middleware.error_middleware import register_error_handlers
