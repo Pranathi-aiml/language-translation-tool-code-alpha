@@ -1,7 +1,7 @@
 import api from './api';
 
 export const postTranslation = async (text, source, target) => {
-  const response = await api.post('/api/translate', { text, source, target });
+ const response = await api.post('/translate', { text, source, target });
   return response.data;
 };
 

@@ -40,14 +40,16 @@ def init_db():
 def create_app():
     """Application factory for Flask REST API."""
     app = Flask(__name__)
+
+    # Apply CORS to every route so that OPTIONS preflights on /api/* routes
+    # always receive the correct Access-Control-Allow-Origin header.
+    logger.info("CORS allowed origins: %s", Config.CORS_ALLOWED_ORIGINS)
     CORS(
         app,
-        resources={
-            r"/api/*": {
-                "origins": Config.CORS_ALLOWED_ORIGINS
-            }
-        },
-        supports_credentials=True
+        resources={r"/*": {"origins": Config.CORS_ALLOWED_ORIGINS}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     )
 
     # Register Middleware Error Handlers

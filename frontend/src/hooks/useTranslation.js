@@ -2,24 +2,47 @@ import { useState, useCallback } from 'react';
 import { postTranslation, getHistory } from '../services/translationService';
 
 export const useTranslation = () => {
-  const [sourceLang, setSourceLang] = useState('auto');
-  const [targetLang, setTargetLang] = useState('hi');
+  const [sourceLang, setSourceLangState] = useState('auto');
+  const [targetLang, setTargetLangState] = useState('hi');
   const [inputText, setInputText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Translating neural text...');
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
 
+  const setSourceLang = useCallback((lang) => {
+    setSourceLangState(lang);
+    setError(null);
+  }, []);
+
+  const setTargetLang = useCallback((lang) => {
+    setTargetLangState(lang);
+    setError(null);
+  }, []);
+
   const translate = useCallback(async () => {
+    if (isLoading) {
+      return; // Prevent duplicate requests
+    }
+
     if (!inputText.trim()) {
       setError('Please enter text to translate.');
       return;
     }
+
     setError(null);
     setIsLoading(true);
+    setLoadingMessage('Translating neural text...');
+
+    // If server takes longer than 3.5s (e.g. Render cold start), notify the user
+    const coldStartTimer = setTimeout(() => {
+      setLoadingMessage('Server is waking up. Please wait a moment...');
+    }, 3500);
+
     try {
       const data = await postTranslation(inputText, sourceLang, targetLang);
-      setTranslatedText(data.translatedText);
+      setTranslatedText(data.translatedText || '');
       
       // Update local history preview
       setHistory((prev) => [
@@ -34,19 +57,26 @@ export const useTranslation = () => {
         ...prev.slice(0, 4)
       ]);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Translation failed.');
+      clearTimeout(coldStartTimer);
+      if (err.code === 'ECONNABORTED' || err.message?.toLowerCase().includes('timeout')) {
+        setError('Translation request timed out. The server is waking up, please try again.');
+      } else {
+        setError(err.response?.data?.error || err.message || 'Translation failed. Please try again.');
+      }
     } finally {
+      clearTimeout(coldStartTimer);
       setIsLoading(false);
+      setLoadingMessage('Translating neural text...');
     }
-  }, [inputText, sourceLang, targetLang]);
+  }, [inputText, sourceLang, targetLang, isLoading]);
 
   const swap = useCallback(() => {
     if (sourceLang === 'auto') {
       setError("Cannot swap when source language is 'Detect Language'.");
       return;
     }
-    setSourceLang(targetLang);
-    setTargetLang(sourceLang);
+    setSourceLangState(targetLang);
+    setTargetLangState(sourceLang);
     setInputText(translatedText);
     setTranslatedText(inputText);
     setError(null);
@@ -61,7 +91,7 @@ export const useTranslation = () => {
   const fetchHistoryRecords = useCallback(async (query = '') => {
     try {
       const data = await getHistory(query);
-      setHistory(data.history);
+      setHistory(data.history || []);
     } catch (err) {
       console.error('Failed to fetch history:', err);
     }
@@ -76,6 +106,7 @@ export const useTranslation = () => {
     setInputText,
     translatedText,
     isLoading,
+    loadingMessage,
     error,
     setError,
     history,

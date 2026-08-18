@@ -13,6 +13,7 @@ const TranslatorCard = ({
   setInputText,
   translatedText,
   isLoading,
+  loadingMessage = 'Translating neural text...',
   error,
   translate,
   swap,
@@ -175,7 +176,7 @@ const TranslatorCard = ({
           >
             {isLoading ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                <LoadingSpinner size={28} text="Translating neural text..." />
+                <LoadingSpinner size={28} text={loadingMessage} />
               </div>
             ) : translatedText ? (
               <span>{translatedText}</span>

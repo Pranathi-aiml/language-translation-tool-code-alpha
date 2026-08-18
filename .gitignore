@@ -1,2 +1,19 @@
 frontend/node_modules/
 frontend/dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# SQLite DB (Render creates its own at runtime)
+database/database.db
+
+# Local environment and generated files
+.env
+backend/.env
+frontend/.env
+__pycache__/
+*.pyc
+database/database.db

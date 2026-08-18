@@ -12,6 +12,7 @@ const TranslatorPage = ({ translationHook, showToast }) => {
     setInputText,
     translatedText,
     isLoading,
+    loadingMessage,
     error,
     history,
     translate,
@@ -42,6 +43,7 @@ const TranslatorPage = ({ translationHook, showToast }) => {
         setInputText={setInputText}
         translatedText={translatedText}
         isLoading={isLoading}
+        loadingMessage={loadingMessage}
         error={error}
         translate={translate}
         swap={swap}

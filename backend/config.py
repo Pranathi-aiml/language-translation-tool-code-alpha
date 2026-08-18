@@ -26,13 +26,15 @@ class Config:
     JWT_EXPIRATION_HOURS = int(os.getenv("JWT_EXPIRATION_HOURS", 24))
 
     # LibreTranslate API Endpoints
+    # Primary: libretranslate.com requires an API key (set LIBRETRANSLATE_API_KEY).
+    # If no LibreTranslate instance is available, the service falls back to MyMemory.
     LIBRETRANSLATE_URL = os.getenv(
         "LIBRETRANSLATE_URL",
         "https://libretranslate.com/translate"
     )
     LIBRETRANSLATE_BACKUP_URL = os.getenv(
         "LIBRETRANSLATE_BACKUP_URL",
-        "https://translate.argosopentech.com/translate"
+        ""
     )
     LIBRETRANSLATE_API_KEY = os.getenv("LIBRETRANSLATE_API_KEY", "")
 
@@ -45,7 +47,11 @@ class Config:
     )
 
     # Allowed CORS Origins
-    CORS_ALLOWED_ORIGINS = os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "*"
-    ).split(",")
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ALLOWED_ORIGINS",
+            "*"
+        ).split(",")
+        if origin.strip()
+    ]

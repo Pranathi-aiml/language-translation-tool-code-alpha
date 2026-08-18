@@ -9,23 +9,34 @@ class TranslationController:
     def translate():
         data = request.get_json(silent=True) or {}
         text = (data.get("text") or "").strip()
-        source = data.get("source", "auto")
-        target = data.get("target", "en")
 
+        # Accept both field-name variants sent by the frontend.
+        # source_lang / source, target_lang / target
+        source = (data.get("source_lang") or data.get("source") or "").strip()
+        target = (data.get("target_lang") or data.get("target") or "").strip()
+
+        # --- Validation -------------------------------------------------
         if not text:
             return jsonify({"error": "Text field is empty. Please enter text to translate."}), 400
 
         if len(text) > 2000:
             return jsonify({"error": "Text exceeds maximum character limit of 2000."}), 400
 
+        if not source:
+            return jsonify({"error": "Source language is required."}), 400
+
         if not target:
             return jsonify({"error": "Target language is required."}), 400
+        # ----------------------------------------------------------------
 
         try:
             result = TranslationService.translate(text, source, target)
-            
-            # Save translation to database (associate with user if authenticated)
-            user_id = g.user.get("user_id") if g.user else None
+
+            # Save translation to database (associate with user if authenticated).
+            # Use getattr to guard against g.user not being set by middleware.
+            current_user = getattr(g, "user", None)
+            user_id = current_user.get("user_id") if current_user else None
+
             record_id = TranslationModel.save_translation(
                 source_lang=source,
                 target_lang=target,
@@ -53,7 +64,8 @@ class TranslationController:
 
     @staticmethod
     def get_history():
-        user_id = g.user.get("user_id") if g.user else None
+        current_user = getattr(g, "user", None)
+        user_id = current_user.get("user_id") if current_user else None
         limit = request.args.get("limit", 20, type=int)
         search = request.args.get("search", None, type=str)
 
@@ -65,7 +77,8 @@ class TranslationController:
 
     @staticmethod
     def clear_history():
-        user_id = g.user.get("user_id") if g.user else None
+        current_user = getattr(g, "user", None)
+        user_id = current_user.get("user_id") if current_user else None
         deleted_count = TranslationModel.clear_history(user_id=user_id)
         return jsonify({
             "message": "Translation history cleared successfully.",

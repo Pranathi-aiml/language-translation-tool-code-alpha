@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: language-translation-tool-code-alpha-1
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "http://localhost:5173,http://127.0.0.1:5173,https://language-translation-tool-code-alph.vercel.app,https://language-translation-tool-code-alph-phi.vercel.app"
+      - key: DATABASE_PATH
+        value: database/database.db
+      - key: LIBRETRANSLATE_URL
+        value: https://libretranslate.com/translate
+      - key: LIBRETRANSLATE_BACKUP_URL
+        value: ""
+      # Set these as secret environment variables in the Render dashboard:
+      # JWT_SECRET_KEY, LIBRETRANSLATE_API_KEY
