@@ -46,12 +46,20 @@ class Config:
         os.getenv("DATABASE_PATH", "database/database.db")
     )
 
-    # Allowed CORS Origins
-    CORS_ALLOWED_ORIGINS = [
-        origin.strip()
-        for origin in os.getenv(
-            "CORS_ALLOWED_ORIGINS",
-            "*"
-        ).split(",")
-        if origin.strip()
+    # Allowed CORS Origins - Always include production Vercel frontend and localhost defaults
+    DEFAULT_CORS_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://language-translation-tool-code-alph.vercel.app",
+        "https://language-translation-tool-code-alph-phi.vercel.app",
     ]
+
+    _raw_custom_origins = [
+        origin.strip()
+        for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+        if origin.strip() and origin.strip() != "*"
+    ]
+
+    CORS_ALLOWED_ORIGINS = list(dict.fromkeys(DEFAULT_CORS_ORIGINS + _raw_custom_origins))

@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const rawBaseUrl = import.meta.env.VITE_API_URL || '';
+const PRODUCTION_API_URL = 'https://language-translation-tool-code-alpha-1.onrender.com';
+
+const rawBaseUrl = (
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? PRODUCTION_API_URL : '')
+).trim();
+
 const baseURL = rawBaseUrl.endsWith('/api')
   ? rawBaseUrl
   : rawBaseUrl
@@ -9,7 +15,7 @@ const baseURL = rawBaseUrl.endsWith('/api')
 
 const api = axios.create({
   baseURL,
-  timeout: 20000,
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json',
   },

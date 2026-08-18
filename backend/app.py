@@ -2,7 +2,7 @@ import os
 import sys
 import sqlite3
 import logging
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from config import Config
 
@@ -48,9 +48,26 @@ def create_app():
         app,
         resources={r"/*": {"origins": Config.CORS_ALLOWED_ORIGINS}},
         supports_credentials=True,
-        allow_headers=["Content-Type", "Authorization"],
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     )
+
+    @app.after_request
+    def apply_cors_headers(response):
+        origin = request.headers.get("Origin")
+        if origin:
+            is_allowed = (
+                origin in Config.CORS_ALLOWED_ORIGINS
+                or origin.endswith(".vercel.app")
+                or origin.startswith("http://localhost:")
+                or origin.startswith("http://127.0.0.1:")
+            )
+            if is_allowed:
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+                response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        return response
 
     # Register Middleware Error Handlers
     from middleware.error_middleware import register_error_handlers
